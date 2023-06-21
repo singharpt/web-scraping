@@ -5,27 +5,26 @@ import urllib.robotparser as rb
 import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util import Retry
-import requests
 
 
 class scrapeIt:
-    def __init__(self, targetURL) -> None:
+    def __init__(self) -> None:
         pass
 
     # The function uses the request library to get the response headers, and checks for content type
     def create_session(self, userAgent, url):
         headers = {'User-Agent': userAgent}
-        session = requests.Session()
-        session.verify = False
-        adapter = HTTPAdapter(max_retries=Retry(
-            total=2, connect=2, read=1, backoff_factor=0.5))
-        session.mount('http://', adapter)
-        session.mount('https://', adapter)
-        head = session.head(url, timeout=3.05 * 2,
-                            headers=headers, allow_redirects=True)
-        content_type = head.headers.get('Content-Type', '').lower()
-        page_content = 'HTML' if 'html' in content_type else 'PDF' if 'pdf' in content_type else content_type
-        return session, page_content
+        with requests.Session() as session:
+            session.verify = False
+            adapter = HTTPAdapter(max_retries=Retry(
+                total=2, connect=2, read=1, backoff_factor=0.5))
+            session.mount('http://', adapter)
+            session.mount('https://', adapter)
+            head = session.head(url, timeout=3.05 * 2,
+                                headers=headers, allow_redirects=True)
+            content_type = head.headers.get('Content-Type', '').lower()
+            page_content = 'HTML' if 'html' in content_type else 'PDF' if 'pdf' in content_type else content_type
+            return session, page_content
 
     # The function uses the playwright library that uses a headless browser and gets the HTML conent of the website
     def get_page_HTML(self) -> str:
@@ -71,10 +70,7 @@ class scrapeIt:
         rp.parse(content)
 
         # the can_fetch function of RobotFileParser returns true if the userAgent can scrap website data else false
-        scraping_allowed = rp.can_fetch(userAgent, url)
-
-        # return the boolen value
-        return scraping_allowed
+        return rp.can_fetch(userAgent, url)
 
     def get_HTML_content(self):
         pass
@@ -85,11 +81,11 @@ class scrapeIt:
 
 userAgent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
 url = "https://constitutioncenter.org/media/files/constitution.pdf"
-page = scrapeIt(url)
+page = scrapeIt()
 session, page_content = page.create_session(userAgent, url)
 print(f"Page Content is : {page_content}")
 print(
     f"Is Scraping Allowed : {page.is_scraping_allowed(userAgent, session, url)}")
-if page.is_scraping_allowed(userAgent, session, url):
+if page.is_scraping_allowed(userAgent, session, url) and page_content == "HTML":
     pass
     print(page.get_page_HTML())
